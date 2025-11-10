@@ -1,4 +1,4 @@
-package ru.synergy.db.entities;
+package db.entities;
 
 import jakarta.persistence.*;
 import lombok.Data;
