@@ -3,21 +3,12 @@ package db.dao;
 import db.entities.User;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
 
 import java.util.List;
 
-public class UserDAO {
-    private SessionFactory sessionFactory;
-
+public class UserDAO extends BaseDAO<User> {
     public UserDAO(SessionFactory sessionFactory) {
-        this.sessionFactory = sessionFactory;
-    }
-
-    public User findById(Long id) {
-        try (Session session = sessionFactory.openSession()) {
-            return session.find(User.class, id);
-        }
+        super(sessionFactory);
     }
 
     public User findByUsername(String username) {
@@ -31,31 +22,6 @@ public class UserDAO {
     public List<User> getAllUsers() {
         try (Session session = sessionFactory.openSession()) {
             return session.createQuery("FROM User", User.class).list();
-        }
-    }
-
-    public User save(User user) {
-        try (Session session = sessionFactory.openSession()) {
-            Transaction transaction = session.beginTransaction();
-            session.persist(user);
-            transaction.commit();
-            return user;
-        }
-    }
-
-    public void update(User user) {
-        try (Session session = sessionFactory.openSession()) {
-            Transaction transaction = session.beginTransaction();
-            session.merge(user);
-            transaction.commit();
-        }
-    }
-
-    public void delete(User user) {
-        try (Session session = sessionFactory.openSession()) {
-            Transaction transaction = session.beginTransaction();
-            session.remove(user);
-            transaction.commit();
         }
     }
 }

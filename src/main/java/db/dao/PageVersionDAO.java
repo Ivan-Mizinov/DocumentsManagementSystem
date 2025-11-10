@@ -47,7 +47,7 @@ public class PageVersionDAO {
             session.persist(version);
             transaction.commit();
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
