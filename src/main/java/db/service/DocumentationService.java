@@ -7,13 +7,13 @@ import java.util.List;
 public interface DocumentationService {
     Page getPageById(Long id);
     List<Page> getAllPages();
-    Page createPage(Page page);
-    Page updatePage(Page page);
+    Page createPage(String title, String slug, String content, String username);
+    PageVersion updatePageContent(Long pageId, String newContent, String username);
     void deletePage(Long id);
 
     User getUserById(Long id);
     List<User> getAllUsers();
-    User createUser(User user);
+    User createUser(String username, String roleName);
     User updateUser(User user);
     void deleteUser(Long id);
 

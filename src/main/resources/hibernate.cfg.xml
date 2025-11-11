@@ -9,12 +9,12 @@
         <property name="hibernate.format_sql">true</property>
         <property name="hibernate.hbm2ddl.auto">update</property>
 
-        <mapping class="db.entity.User"/>
-        <mapping class="db.entity.Role"/>
-        <mapping class="db.entity.Page"/>
-        <mapping class="db.entity.PageVersion"/>
-        <mapping class="db.entity.Heading"/>
-        <mapping class="db.entity.Block"/>
-        <mapping class="db.entity.Tag"/>
+        <mapping class="db.entities.User"/>
+        <mapping class="db.entities.Role"/>
+        <mapping class="db.entities.Page"/>
+        <mapping class="db.entities.PageVersion"/>
+        <mapping class="db.entities.Heading"/>
+        <mapping class="db.entities.Block"/>
+        <mapping class="db.entities.Tag"/>
     </session-factory>
 </hibernate-configuration>

@@ -27,7 +27,7 @@ public class PageVersionDAO {
         }
     }
 
-    public void createNewVersion(Page page, User changer, String newContent) {
+    public PageVersion createNewVersion(Page page, User changer, String newContent) {
         try (Session session = sessionFactory.openSession()) {
             Transaction transaction = session.beginTransaction();
 
@@ -46,6 +46,7 @@ public class PageVersionDAO {
 
             session.persist(version);
             transaction.commit();
+            return version;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

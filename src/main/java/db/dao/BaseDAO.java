@@ -32,11 +32,12 @@ public abstract class BaseDAO<T> {
         return entity;
     }
 
-    public void update(T entity) {
+    public T update(T entity) {
         Session session = getSession();
         Transaction tx = session.beginTransaction();
         session.merge(entity);
         commitTransaction(tx, session);
+        return entity;
     }
 
     public void delete(T entity) {
