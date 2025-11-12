@@ -17,6 +17,7 @@
         <mapping class="db.entities.Block"/>
         <mapping class="db.entities.Tag"/>
         <mapping class="db.entities.Comment"/>
+        <mapping class="db.entities.Link"/>
 
     </session-factory>
 </hibernate-configuration>

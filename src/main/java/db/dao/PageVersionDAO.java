@@ -38,8 +38,10 @@ public class PageVersionDAO {
                     .uniqueResult();
             int nextVersion = latestVersionNumber == null ? 1 : latestVersionNumber + 1;
 
+            Page managedPage = session.merge(page);
+
             PageVersion version = new PageVersion();
-            version.setPage(page);
+            version.setPage(managedPage);
             version.setVersionNumber(nextVersion);
             version.setContent(newContent);
             version.setChangedBy(changer);
@@ -60,6 +62,12 @@ public class PageVersionDAO {
                             "FROM PageVersion v WHERE v.page.id = :pageId ORDER BY v.versionNumber", PageVersion.class)
                     .setParameter("pageId", pageId)
                     .list();
+        }
+    }
+
+    public PageVersion findById(Long id) {
+        try (Session session = sessionFactory.openSession()) {
+            return session.find(PageVersion.class, id);
         }
     }
 }

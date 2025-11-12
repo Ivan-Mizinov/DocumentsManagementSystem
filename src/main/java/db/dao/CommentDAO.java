@@ -12,7 +12,7 @@ public class CommentDAO extends BaseDAO<Comment> {
     }
 
     public List<Comment> getCommentsByPageVersionId(Long pageVersionId) {
-        try (Session session = sessionFactory.openSession()) {
+        try (Session session = getSession()) {
             return session.createQuery(
                             "FROM Comment c WHERE c.pageVersion.id = :pageVersionId ORDER BY c.createdAt",
                             Comment.class)
@@ -22,7 +22,7 @@ public class CommentDAO extends BaseDAO<Comment> {
     }
 
     public List<Comment> getCommentsByPageId(Long pageId) {
-        try (Session session = sessionFactory.openSession()) {
+        try (Session session = getSession()) {
             return session.createQuery(
                             "FROM Comment c WHERE c.pageVersion.page.id = :pageId ORDER BY c.createdAt",
                             Comment.class)

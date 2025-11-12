@@ -12,13 +12,13 @@ public class BlockDAO extends BaseDAO<Block> {
     }
 
     public List<Block> getAllBlocks() {
-        try (Session session = sessionFactory.openSession()) {
+        try (Session session = getSession()) {
             return session.createQuery("FROM Block", Block.class).list();
         }
     }
 
     public List<Block> getBlocksByPageId(Long pageId) {
-        try (Session session = sessionFactory.openSession()) {
+        try (Session session = getSession()) {
             return session.createQuery(
                             "FROM Block b WHERE b.page.id = :pageId", Block.class)
                     .setParameter("pageId", pageId)

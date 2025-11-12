@@ -37,6 +37,10 @@ public class Page {
     @BatchSize(size = 10)
     private List<Block> blocks;
 
+    @OneToMany(mappedBy = "page", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @BatchSize(size = 10)
+    private List<Link> links;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "page_tags",

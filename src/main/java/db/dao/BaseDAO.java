@@ -16,20 +16,67 @@ public abstract class BaseDAO<T> {
     }
 
     protected void commitTransaction(Transaction tx, Session session) {
-        try (session) {
+        try {
             tx.commit();
         } catch (Exception e) {
-            tx.rollback();
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
             throw new RuntimeException(e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 
     public T save(T entity) {
         Session session = getSession();
         Transaction tx = session.beginTransaction();
-        session.persist(entity);
-        commitTransaction(tx, session);
-        return entity;
+        try {
+            if (session.contains(entity)) {
+                throw new RuntimeException("Сущность " + entity.getClass().getSimpleName() + " уже присутствует в сессии");
+            }
+
+            Object identifier = null;
+            try {
+                identifier = session.getIdentifier(entity);
+            } catch (IllegalArgumentException ignored) {
+            }
+
+            if (identifier != null) {
+                Object existing = session.find(entity.getClass(), identifier);
+                if (existing != null) {
+                    throw new RuntimeException("Сущность " + entity.getClass().getSimpleName() + " с id " + identifier + " уже существует");
+                }
+            }
+
+            session.persist(entity);
+            commitTransaction(tx, session);
+            return entity;
+        } catch (RuntimeException e) {
+            if (tx != null && tx.isActive()) {
+                try {
+                    tx.rollback();
+                } catch (Exception ignored) {
+                }
+            }
+            if (session.isOpen()) {
+                session.close();
+            }
+            throw e;
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                try {
+                    tx.rollback();
+                } catch (Exception ignored) {
+                }
+            }
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
+            throw new RuntimeException(e);
+        }
     }
 
     public T update(T entity) {

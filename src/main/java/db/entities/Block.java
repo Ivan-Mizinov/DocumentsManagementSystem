@@ -23,7 +23,7 @@ public class Block {
     private String content;
 
     @Column(nullable = false)
-    private Integer order;
+    private Integer position;
 
     @Column(nullable = false)
     private boolean isVisible;

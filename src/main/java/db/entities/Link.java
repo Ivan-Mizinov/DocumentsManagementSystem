@@ -5,8 +5,8 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(name = "headings")
-public class Heading {
+@Table(name = "links")
+public class Link {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -16,12 +16,9 @@ public class Heading {
     private Page page;
 
     @Column(nullable = false)
-    private Integer level;
+    private String url;
 
-    @Column(nullable = false)
-    private String text;
+    private String title;
 
-    @Column(nullable = false)
-    private Integer position;
+    private String description;
 }
-

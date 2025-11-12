@@ -9,6 +9,8 @@ public interface DocumentationService {
     List<Page> getAllPages();
     Page createPage(String title, String slug, String content, String username);
     PageVersion updatePageContent(Long pageId, String newContent, String username);
+    PageVersion getLatestPageVersion(Long pageId);
+    List<PageVersion> getPageVersions(Long pageId);
     void deletePage(Long id);
 
     User getUserById(Long id);
@@ -30,4 +32,8 @@ public interface DocumentationService {
 
     List<Block> getBlocksByPageId(Long pageId);
     List<Heading> getHeadingsByPageId(Long pageId);
+
+    List<Link> getLinksByPageId(Long pageId);
+    List<Comment> getCommentsByPageVersion(Long pageVersionId);
+    Comment addComment(Long pageVersionId, String username, String text);
 }

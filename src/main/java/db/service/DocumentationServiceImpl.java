@@ -14,8 +14,12 @@ public class DocumentationServiceImpl implements DocumentationService {
     private final SearchDAO searchDAO;
     private final TagDAO tagDAO;
     private final UserDAO userDAO;
+    private final CommentDAO commentDAO;
+    private final LinkDAO linkDAO;
 
-    public DocumentationServiceImpl(BlockDAO blockDAO, PageDAO pageDAO, PageVersionDAO pageVersionDAO, RoleDAO roleDAO, SearchDAO searchDAO, TagDAO tagDAO, UserDAO userDAO) {
+    public DocumentationServiceImpl(BlockDAO blockDAO, PageDAO pageDAO, PageVersionDAO pageVersionDAO,
+                                    RoleDAO roleDAO, SearchDAO searchDAO, TagDAO tagDAO, UserDAO userDAO,
+                                    CommentDAO commentDAO, LinkDAO linkDAO) {
         this.blockDAO = blockDAO;
         this.pageDAO = pageDAO;
         this.pageVersionDAO = pageVersionDAO;
@@ -23,14 +27,15 @@ public class DocumentationServiceImpl implements DocumentationService {
         this.searchDAO = searchDAO;
         this.tagDAO = tagDAO;
         this.userDAO = userDAO;
+        this.commentDAO = commentDAO;
+        this.linkDAO = linkDAO;
     }
 
     @Override
     public Page getPageById(Long id) {
         Page page = pageDAO.findById(Page.class, id);
-        if (page == null) {
-            throw new RuntimeException("Page not found");
-        }
+        if (page == null) throw new RuntimeException("Page not found");
+
         return page;
     }
 
@@ -43,7 +48,11 @@ public class DocumentationServiceImpl implements DocumentationService {
     public Page createPage(String title, String slug, String content, String username) {
         User author = userDAO.findByUsername(username);
         if (author == null) throw new RuntimeException("User not found");
-        if (pageDAO.findBySlug(slug) != null) throw new RuntimeException("Page already exists");
+
+        Page existingPage = pageDAO.findBySlug(slug);
+        if (existingPage != null) {
+            return existingPage;
+        }
 
         Page page = new Page();
         page.setTitle(title);
@@ -67,6 +76,25 @@ public class DocumentationServiceImpl implements DocumentationService {
         pageDAO.update(page);
 
         return pageVersionDAO.createNewVersion(page, editor, newContent);
+    }
+
+    @Override
+    public PageVersion getLatestPageVersion(Long pageId) {
+        Page page = pageDAO.findById(Page.class, pageId);
+        if (page == null) throw new RuntimeException("Page not found");
+
+        PageVersion version = pageVersionDAO.findLatestVersion(pageId);
+        if (version == null) throw new RuntimeException("Page version not found");
+
+        return version;
+    }
+
+    @Override
+    public List<PageVersion> getPageVersions(Long pageId) {
+        Page page = pageDAO.findById(Page.class, pageId);
+        if (page == null) throw new RuntimeException("Page not found");
+
+        return pageVersionDAO.findAllVersions(pageId);
     }
 
     @Override
@@ -100,6 +128,8 @@ public class DocumentationServiceImpl implements DocumentationService {
         User user = new User();
         user.setUsername(username);
         user.setRole(role);
+        user.setEmail(username + "@example.com");
+        user.setPassword(username + "_pass");
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
 
@@ -171,5 +201,34 @@ public class DocumentationServiceImpl implements DocumentationService {
     @Override
     public List<Heading> getHeadingsByPageId(Long pageId) {
         return pageDAO.getHeadingsByPageId(pageId);
+    }
+
+    @Override
+    public List<Link> getLinksByPageId(Long pageId) {
+        return linkDAO.getLinksByPageId(pageId);
+    }
+
+    @Override
+    public List<Comment> getCommentsByPageVersion(Long pageVersionId) {
+        return commentDAO.getCommentsByPageVersionId(pageVersionId);
+    }
+
+    @Override
+    public Comment addComment(Long pageVersionId, String username, String text) {
+        PageVersion pageVersion = pageVersionDAO.findById(pageVersionId);
+        if (pageVersion == null) throw new RuntimeException("Page version not found");
+
+        User author = userDAO.findByUsername(username);
+        if (author == null) throw new RuntimeException("User not found");
+
+        Comment comment = new Comment();
+        comment.setPageVersion(pageVersion);
+        comment.setAuthor(author);
+        comment.setText(text);
+        comment.setCreatedAt(LocalDateTime.now());
+        comment.setUpdatedAt(LocalDateTime.now());
+        comment.setResolved(false);
+
+        return commentDAO.save(comment);
     }
 }

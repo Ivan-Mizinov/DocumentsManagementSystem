@@ -13,13 +13,13 @@ public class TagDAO extends BaseDAO<Tag> {
     }
 
     public List<Tag> getAllTags() {
-        try (Session session = sessionFactory.openSession()) {
+        try (Session session = getSession()) {
             return session.createQuery("FROM Tag", Tag.class).list();
         }
     }
 
     public List<Tag> getTagsByPageId(Long pageId) {
-        try (Session session = sessionFactory.openSession()) {
+        try (Session session = getSession()) {
             return session.createQuery(
                             "SELECT t FROM Tag t JOIN t.pages p WHERE p.id = :pageId",
                             Tag.class)
@@ -32,7 +32,7 @@ public class TagDAO extends BaseDAO<Tag> {
     }
 
     public List<Page> findPagesByTag(String tagName) {
-        try (Session session = sessionFactory.openSession()) {
+        try (Session session = getSession()) {
             return session.createQuery(
                             "SELECT p FROM Page p JOIN p.tags t WHERE t.name = :tagName",
                             Page.class)
