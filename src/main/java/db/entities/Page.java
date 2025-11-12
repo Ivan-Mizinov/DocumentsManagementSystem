@@ -2,6 +2,7 @@ package db.entities;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,12 +26,15 @@ public class Page {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "page", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @BatchSize(size = 10)
     private List<PageVersion> versions;
 
     @OneToMany(mappedBy = "page", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @BatchSize(size = 10)
     private List<Heading> headings;
 
     @OneToMany(mappedBy = "page", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @BatchSize(size = 10)
     private List<Block> blocks;
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -39,6 +43,7 @@ public class Page {
             joinColumns = @JoinColumn(name = "page_id"),
             inverseJoinColumns = @JoinColumn(name = "tag_id")
     )
+    @BatchSize(size = 10)
     private Set<Tag> tags;
 }
 

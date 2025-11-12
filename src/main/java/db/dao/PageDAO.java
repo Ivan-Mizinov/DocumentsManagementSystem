@@ -1,5 +1,6 @@
 package db.dao;
 
+import db.entities.Heading;
 import db.entities.Page;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -22,6 +23,16 @@ public class PageDAO extends BaseDAO<Page> {
             return session.createQuery("FROM Page p WHERE p.slug = :slug", Page.class)
                     .setParameter("slug", slug)
                     .uniqueResult();
+        }
+    }
+
+    public List<Heading> getHeadingsByPageId(Long pageId) {
+        try (Session session = sessionFactory.openSession()) {
+            return session.createQuery(
+                            "FROM Heading h WHERE h.page.id = :pageId ORDER BY h.order",
+                            Heading.class)
+                    .setParameter("pageId", pageId)
+                    .list();
         }
     }
 }

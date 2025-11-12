@@ -3,6 +3,7 @@ package db.service;
 import db.dao.*;
 import db.entities.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class DocumentationServiceImpl implements DocumentationService {
@@ -14,7 +15,7 @@ public class DocumentationServiceImpl implements DocumentationService {
     private final TagDAO tagDAO;
     private final UserDAO userDAO;
 
-    public DocumentationServiceImpl(BlockDAO blockDAO,PageDAO pageDAO, PageVersionDAO pageVersionDAO, RoleDAO roleDAO, SearchDAO searchDAO, TagDAO tagDAO, UserDAO userDAO) {
+    public DocumentationServiceImpl(BlockDAO blockDAO, PageDAO pageDAO, PageVersionDAO pageVersionDAO, RoleDAO roleDAO, SearchDAO searchDAO, TagDAO tagDAO, UserDAO userDAO) {
         this.blockDAO = blockDAO;
         this.pageDAO = pageDAO;
         this.pageVersionDAO = pageVersionDAO;
@@ -26,7 +27,11 @@ public class DocumentationServiceImpl implements DocumentationService {
 
     @Override
     public Page getPageById(Long id) {
-        return pageDAO.findById(Page.class, id);
+        Page page = pageDAO.findById(Page.class, id);
+        if (page == null) {
+            throw new RuntimeException("Page not found");
+        }
+        return page;
     }
 
     @Override
@@ -37,12 +42,14 @@ public class DocumentationServiceImpl implements DocumentationService {
     @Override
     public Page createPage(String title, String slug, String content, String username) {
         User author = userDAO.findByUsername(username);
-        if (author == null) {
-            throw new RuntimeException("User not found");
-        }
+        if (author == null) throw new RuntimeException("User not found");
+        if (pageDAO.findBySlug(slug) != null) throw new RuntimeException("Page already exists");
+
         Page page = new Page();
         page.setTitle(title);
         page.setSlug(slug);
+        page.setCreatedAt(LocalDateTime.now());
+        page.setUpdatedAt(LocalDateTime.now());
         pageDAO.save(page);
         pageVersionDAO.createNewVersion(page, author, content);
         return page;
@@ -56,17 +63,24 @@ public class DocumentationServiceImpl implements DocumentationService {
         User editor = userDAO.findByUsername(username);
         if (editor == null) throw new RuntimeException("User not found");
 
+        page.setUpdatedAt(LocalDateTime.now());
+        pageDAO.update(page);
+
         return pageVersionDAO.createNewVersion(page, editor, newContent);
     }
 
     @Override
     public void deletePage(Long id) {
-        pageDAO.delete(pageDAO.findById(Page.class, id));
+        Page page = pageDAO.findById(Page.class, id);
+        if (page == null) throw new RuntimeException("Page not found");
+        pageDAO.delete(page);
     }
 
     @Override
     public User getUserById(Long id) {
-        return userDAO.findById(User.class, id);
+        User user = userDAO.findById(User.class, id);
+        if (user == null) throw new RuntimeException("User not found");
+        return user;
     }
 
     @Override
@@ -86,23 +100,30 @@ public class DocumentationServiceImpl implements DocumentationService {
         User user = new User();
         user.setUsername(username);
         user.setRole(role);
+        user.setCreatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
 
         return userDAO.save(user);
     }
 
     @Override
     public User updateUser(User user) {
+        user.setUpdatedAt(LocalDateTime.now());
         return userDAO.update(user);
     }
 
     @Override
     public void deleteUser(Long id) {
-        userDAO.delete(userDAO.findById(User.class, id));
+        User user = userDAO.findById(User.class, id);
+        if (user == null) throw new RuntimeException("User not found");
+        userDAO.delete(user);
     }
 
     @Override
     public Role getRoleById(Long id) {
-        return roleDAO.findById(Role.class, id);
+        Role role = roleDAO.findById(Role.class, id);
+        if (role == null) throw new RuntimeException("Role not found");
+        return role;
     }
 
     @Override
@@ -122,7 +143,9 @@ public class DocumentationServiceImpl implements DocumentationService {
 
     @Override
     public void deleteRole(Long id) {
-        roleDAO.delete(roleDAO.findById(Role.class, id));
+        Role role = roleDAO.findById(Role.class, id);
+        if (role == null) throw new RuntimeException("Role not found");
+        roleDAO.delete(role);
     }
 
     @Override
@@ -147,6 +170,6 @@ public class DocumentationServiceImpl implements DocumentationService {
 
     @Override
     public List<Heading> getHeadingsByPageId(Long pageId) {
-        return null;
+        return pageDAO.getHeadingsByPageId(pageId);
     }
 }

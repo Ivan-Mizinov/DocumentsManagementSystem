@@ -18,8 +18,10 @@ public class RoleDAO extends BaseDAO<Role> {
     }
 
     public Role findByName(String roleName) {
-        try (Session session = getSession()) {
-            return session.find(Role.class, roleName);
+        try (Session session = sessionFactory.openSession()) {
+            return session.createQuery("FROM Role r WHERE r.name = :roleName", Role.class)
+                    .setParameter("roleName", roleName)
+                    .uniqueResult();
         }
     }
 }

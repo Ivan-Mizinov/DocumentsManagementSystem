@@ -34,4 +34,7 @@ public class User {
 
     @OneToMany(mappedBy = "changedBy", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<PageVersion> changedVersions;
+
+    @OneToMany(mappedBy = "author", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Set<Comment> comments;
 }

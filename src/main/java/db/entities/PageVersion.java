@@ -2,8 +2,10 @@ package db.entities;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Entity
@@ -33,5 +35,9 @@ public class PageVersion {
 
     @Column(nullable = false)
     private boolean isPublished;
+
+    @OneToMany(mappedBy = "pageVersion", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @BatchSize(size = 10)
+    private List<Comment> comments;
 }
 

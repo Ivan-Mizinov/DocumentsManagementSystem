@@ -31,11 +31,12 @@ public class PageVersionDAO {
         try (Session session = sessionFactory.openSession()) {
             Transaction transaction = session.beginTransaction();
 
-            int nextVersion = 1;
-            PageVersion latest = findLatestVersion(page.getId());
-            if (latest != null) {
-                nextVersion = latest.getVersionNumber() + 1;
-            }
+            Integer latestVersionNumber = session.createQuery(
+                            "SELECT max(v.versionNumber) FROM PageVersion v WHERE v.page.id = :pageId",
+                            Integer.class)
+                    .setParameter("pageId", page.getId())
+                    .uniqueResult();
+            int nextVersion = latestVersionNumber == null ? 1 : latestVersionNumber + 1;
 
             PageVersion version = new PageVersion();
             version.setPage(page);
@@ -43,6 +44,7 @@ public class PageVersionDAO {
             version.setContent(newContent);
             version.setChangedBy(changer);
             version.setChangedAt(LocalDateTime.now());
+            version.setPublished(false);
 
             session.persist(version);
             transaction.commit();
