@@ -1,5 +1,6 @@
 package db.entities;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.BatchSize;
@@ -27,6 +28,7 @@ public class Page {
 
     @OneToMany(mappedBy = "page", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @BatchSize(size = 10)
+    @JsonManagedReference(value = "page-versions")
     private List<PageVersion> versions;
 
     @OneToMany(mappedBy = "page", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

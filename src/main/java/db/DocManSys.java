@@ -6,6 +6,7 @@ import db.service.DocumentationService;
 import db.service.DocumentationServiceImpl;
 import db.util.HibernateUtil;
 import org.hibernate.SessionFactory;
+import redis.clients.jedis.Jedis;
 
 import java.util.List;
 
@@ -13,6 +14,7 @@ public class DocManSys {
     public static void main(String[] args) {
         SessionFactory sessionFactory = HibernateUtil.getSessionFactory();
         DocumentationService documentationService = buildDocumentationService(sessionFactory);
+        testRedisConnection();
 
         User guest = createUser(documentationService, "guestUser", "Guest");
         User reader = createUser(documentationService, "readerUser", "Reader");
@@ -154,5 +156,15 @@ public class DocManSys {
 
         documentationService.deletePage(page.getId());
         System.out.println("Страница удалена");
+    }
+
+    private static void testRedisConnection() {
+        try (Jedis jedis = new Jedis("localhost", 6379)) {
+            String response = jedis.ping();
+            System.out.println("Redis доступен. Ответ: " + response);
+        } catch (Exception e) {
+            System.err.println("Ошибка подключения к Redis: " + e.getMessage());
+            System.exit(1);
+        }
     }
 }

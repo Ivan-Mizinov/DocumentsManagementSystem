@@ -1,5 +1,6 @@
 package db.entities;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.BatchSize;
@@ -15,6 +16,7 @@ public class PageVersion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @JsonBackReference(value = "page-versions")
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "page_id", nullable = false)
     private Page page;
@@ -26,6 +28,7 @@ public class PageVersion {
     @Column(columnDefinition = "TEXT")
     private String content;
 
+    @JsonBackReference(value = "user-pageVersions")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "changed_by_id", nullable = false)
     private User changedBy;
