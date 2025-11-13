@@ -1,6 +1,7 @@
 package db.dao;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import db.dto.PageVersionDTO;
 import db.entities.Page;
 import db.entities.PageVersion;
 import db.entities.User;
@@ -11,12 +12,13 @@ import org.hibernate.Transaction;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class PageVersionDAO {
     private static final String LATEST_VERSION_KEY_TEMPLATE = "page:%d:version:latest";
     private static final String PAGE_VERSIONS_KEY_TEMPLATE = "page:%d:versions";
     private static final String VERSION_BY_ID_KEY_TEMPLATE = "pageversion:id:%d";
-    private static final TypeReference<List<PageVersion>> PAGE_VERSION_LIST_TYPE = new TypeReference<>() {};
+    private static final TypeReference<List<PageVersionDTO>> PAGE_VERSION_LIST_TYPE = new TypeReference<>() {};
 
     private final SessionFactory sessionFactory;
 
@@ -24,11 +26,48 @@ public class PageVersionDAO {
         this.sessionFactory = sessionFactory;
     }
 
+    private PageVersionDTO entityToDTO(PageVersion entity) {
+        if (entity == null) return null;
+        Long pageId = entity.getPage() != null ? entity.getPage().getId() : null;
+        Long changedById = entity.getChangedBy() != null ? entity.getChangedBy().getId() : null;
+        return new PageVersionDTO(
+                entity.getId(),
+                pageId,
+                entity.getVersionNumber(),
+                entity.getContent(),
+                changedById,
+                entity.getChangedAt(),
+                entity.isPublished()
+        );
+    }
+
+    private PageVersion dtoToEntity(PageVersionDTO dto) {
+        if (dto == null) return null;
+        PageVersion version = new PageVersion();
+        version.setId(dto.getId());
+        version.setVersionNumber(dto.getVersionNumber());
+        version.setContent(dto.getContent());
+        version.setChangedAt(dto.getChangedAt());
+        version.setPublished(dto.isPublished());
+
+        try (Session session = sessionFactory.openSession()) {
+            if (dto.getPageId() != null) {
+                Page page = session.find(Page.class, dto.getPageId());
+                version.setPage(page);
+            }
+            if (dto.getChangedById() != null) {
+                User changedBy = session.find(User.class, dto.getChangedById());
+                version.setChangedBy(changedBy);
+            }
+        }
+        return version;
+    }
+
     public PageVersion findLatestVersion(Long pageId) {
         String key = latestVersionKey(pageId);
-        PageVersion cached = RedisCacheUtil.getValue(key, PageVersion.class);
-        if (cached != null) {
-            return cached;
+        PageVersionDTO cachedDTO = RedisCacheUtil.getValue(key, PageVersionDTO.class);
+        if (cachedDTO != null) {
+            return dtoToEntity(cachedDTO);
         }
         try (Session session = sessionFactory.openSession()) {
             PageVersion version = session.createQuery(
@@ -38,7 +77,7 @@ public class PageVersionDAO {
                     .uniqueResult();
             if (version != null) {
                 cacheVersion(version);
-                RedisCacheUtil.cacheValue(key, version);
+                RedisCacheUtil.cacheValue(key, entityToDTO(version));
             }
             return version;
         }
@@ -69,7 +108,7 @@ public class PageVersionDAO {
             transaction.commit();
 
             cacheVersion(version);
-            RedisCacheUtil.cacheValue(latestVersionKey(page.getId()), version);
+            RedisCacheUtil.cacheValue(latestVersionKey(page.getId()), entityToDTO(version));
             RedisCacheUtil.evict(latestVersionKey(page.getId()));
 
             return version;
@@ -80,25 +119,26 @@ public class PageVersionDAO {
 
     public List<PageVersion> findAllVersions(Long pageId) {
         String key = pageVersionsKey(pageId);
-        List<PageVersion> cached = RedisCacheUtil.getValue(key, PAGE_VERSION_LIST_TYPE);
-        if (cached != null) {
-            return cached;
+        List<PageVersionDTO> cachedDTOs = RedisCacheUtil.getValue(key, PAGE_VERSION_LIST_TYPE);
+        if (cachedDTOs != null) {
+            return cachedDTOs.stream().map(this::dtoToEntity).collect(Collectors.toList());
         }
         try (Session session = sessionFactory.openSession()) {
             List<PageVersion> versions = session.createQuery(
                             "FROM PageVersion v WHERE v.page.id = :pageId ORDER BY v.versionNumber", PageVersion.class)
                     .setParameter("pageId", pageId)
                     .list();
-            RedisCacheUtil.cacheValue(key, versions);
+            List<PageVersionDTO> DTOs = versions.stream().map(this::entityToDTO).collect(Collectors.toList());
+            RedisCacheUtil.cacheValue(key, DTOs);
             return versions;
         }
     }
 
     public PageVersion findById(Long id) {
         String key = versionByIdKey(id);
-        PageVersion cached = RedisCacheUtil.getValue(key, PageVersion.class);
-        if (cached != null) {
-            return cached;
+        PageVersionDTO cachedDTO = RedisCacheUtil.getValue(key, PageVersionDTO.class);
+        if (cachedDTO != null) {
+            return dtoToEntity(cachedDTO);
         }
         try (Session session = sessionFactory.openSession()) {
             PageVersion version = session.find(PageVersion.class, id);
@@ -111,7 +151,7 @@ public class PageVersionDAO {
 
     private void cacheVersion(PageVersion version) {
         if (version != null && version.getId() != null) {
-            RedisCacheUtil.cacheValue(versionByIdKey(version.getId()), version);
+            RedisCacheUtil.cacheValue(versionByIdKey(version.getId()), entityToDTO(version));
         }
     }
 

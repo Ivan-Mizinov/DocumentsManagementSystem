@@ -12,6 +12,7 @@ import java.util.List;
 
 public class DocManSys {
     public static void main(String[] args) {
+        cleanRedisCache();
         SessionFactory sessionFactory = HibernateUtil.getSessionFactory();
         DocumentationService documentationService = buildDocumentationService(sessionFactory);
         testRedisConnection();
@@ -26,6 +27,15 @@ public class DocManSys {
         demonstratePageMethods(documentationService, editor, commenter);
 
         HibernateUtil.shutdown();
+    }
+
+    private static void cleanRedisCache() {
+        try (Jedis jedis = new Jedis("localhost", 6379)) {
+            jedis.flushAll();
+            System.out.println("Redis очищен");
+        } catch (Exception e) {
+            System.err.println("Ошибка при очистке Redis: " + e.getMessage());
+        }
     }
 
     private static DocumentationService buildDocumentationService(SessionFactory sessionFactory) {

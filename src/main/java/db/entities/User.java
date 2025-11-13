@@ -1,6 +1,5 @@
 package db.entities;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -29,11 +28,10 @@ public class User {
 
     private LocalDateTime updatedAt;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.EAGER,  cascade = CascadeType.PERSIST)
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 
-    @JsonManagedReference(value = "user-pageVersions")
     @OneToMany(mappedBy = "changedBy", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<PageVersion> changedVersions;
 

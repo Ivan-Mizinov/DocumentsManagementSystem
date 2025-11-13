@@ -7,12 +7,18 @@ import org.hibernate.Transaction;
 
 import java.lang.reflect.Method;
 
-public abstract class BaseDAO<T> {
+public abstract class BaseDAO<T, D> {
     protected SessionFactory sessionFactory;
 
     public BaseDAO(SessionFactory sessionFactory) {
         this.sessionFactory = sessionFactory;
     }
+
+    protected abstract D entityToDTO(T entity);
+
+    protected abstract T dtoToEntity(D dto);
+
+    protected abstract Class<D> getDTOClass();
 
     protected Session getSession() {
         return sessionFactory.openSession();
@@ -55,7 +61,7 @@ public abstract class BaseDAO<T> {
                 }
             }
 
-            session.persist(entity);
+            entity = session.merge(entity);
             commitTransaction(tx, session);
             cacheEntity(entity);
             return entity;
@@ -107,12 +113,16 @@ public abstract class BaseDAO<T> {
     }
 
     public T findById(Class<T> clazz, Long id) {
-        T cached = RedisCacheUtil.getValue(entityKey(clazz, id), clazz);
-        if (cached != null) {
-            return cached;
+        D cachedDTO = RedisCacheUtil.getValue(entityKey(clazz, id), getDTOClass());
+        if (cachedDTO != null) {
+            return dtoToEntity(cachedDTO);
         }
         try (Session session = getSession()) {
-            return session.find(clazz, id);
+            T entity = session.find(clazz, id);
+            if (entity != null) {
+                cacheEntity(entity);
+            }
+            return entity;
         }
     }
 
@@ -123,7 +133,8 @@ public abstract class BaseDAO<T> {
     protected void cacheEntity(T entity) {
         Long id = extractId(entity);
         if (id != null) {
-            RedisCacheUtil.cacheValue(entityKey(entity.getClass(), id), entity);
+            D dto = entityToDTO(entity);
+            RedisCacheUtil.cacheValue(entityKey(getDTOClass(), id), dto);
         }
     }
 
