@@ -77,4 +77,8 @@ public class RedisCacheUtil {
             return null;
         });
     }
+
+    public static void shutdown() {
+        JEDIS_POOL.close();
+    }
 }

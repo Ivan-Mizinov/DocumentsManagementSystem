@@ -5,6 +5,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 
+import java.io.Serializable;
 import java.lang.reflect.Method;
 
 public abstract class BaseDAO<T, D> {
@@ -43,28 +44,39 @@ public abstract class BaseDAO<T, D> {
         Session session = getSession();
         Transaction tx = session.beginTransaction();
         try {
-            if (session.contains(entity)) {
-                throw new RuntimeException("Сущность " + entity.getClass().getSimpleName() + " уже присутствует в сессии");
-            }
-
-            Object identifier = null;
-            try {
-                identifier = session.getIdentifier(entity);
-            } catch (IllegalArgumentException e) {
-                System.out.println("Не удалось получить идентификатор сущности: " + e.getMessage());
-            }
-
-            if (identifier != null) {
-                Object existing = session.find(entity.getClass(), identifier);
+            Long entityId = extractId(entity);
+            if (entityId != null) {
+                Object existing = session.find(entity.getClass(), entityId);
                 if (existing != null) {
-                    throw new RuntimeException("Сущность " + entity.getClass().getSimpleName() + " с id " + identifier + " уже существует");
+                    throw new RuntimeException(
+                            "Сущность уже есть существует"
+                    );
                 }
             }
 
-            entity = session.merge(entity);
+            T managedEntity = session.merge(entity);
+            if (!session.contains(managedEntity)) {
+                throw new RuntimeException(
+                        "Не удалось присоединить сущность к сессии после merge()"
+                );
+            }
+
+            Object identifier = session.getIdentifier(managedEntity);
+            if (identifier == null) {
+                throw new RuntimeException(
+                        "Не удалось получить идентификатор сущности после сохранения"
+                );
+            }
+            if (!(identifier instanceof Long)) {
+                throw new RuntimeException(
+                        "Идентификатор сущности должен быть типа Long, но получен: " +
+                                identifier.getClass()
+                );
+            }
+
             commitTransaction(tx, session);
-            cacheEntity(entity);
-            return entity;
+            cacheEntity(managedEntity);
+            return managedEntity;
         } catch (RuntimeException e) {
             if (tx != null && tx.isActive()) {
                 try {
@@ -151,6 +163,13 @@ public abstract class BaseDAO<T, D> {
             Object value = getId.invoke(entity);
             if (value instanceof Long) {
                 return (Long) value;
+            } else {
+                if (value == null) {
+                    System.out.println("getId() вернул null");
+                } else {
+                    System.out.println("getId() вернул не Long: " + value.getClass());
+                }
+                return null;
             }
         } catch (Exception e) {
             System.out.println("Не удалось получить ID сущности: " + e.getMessage());

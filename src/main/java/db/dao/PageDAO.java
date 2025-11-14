@@ -90,10 +90,11 @@ public class PageDAO extends BaseDAO<Page, PageDTO> {
         String slug = page.getSlug();
         Page existingPage = findBySlug(slug);
         if (existingPage != null) {
-            System.out.println("Страница с '" + slug + "' уже существует. Возвращаем существующую запись.");
+            System.out.println("Страница с slug '" + slug + "' уже существует. Возвращаем существующую запись.");
             cacheEntity(page);
             return existingPage;
         }
+
         Page saved = super.save(page);
         RedisCacheUtil.evict(ALL_PAGES_KEY);
         RedisCacheUtil.cacheValue(slugKey(saved.getSlug()), entityToDTO(saved));

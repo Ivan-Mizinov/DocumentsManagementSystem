@@ -4,14 +4,16 @@ import db.dao.*;
 import db.entities.*;
 import db.service.DocumentationService;
 import db.service.DocumentationServiceImpl;
+import db.util.ElasticsearchUtil;
 import db.util.HibernateUtil;
+import db.util.RedisCacheUtil;
 import org.hibernate.SessionFactory;
 import redis.clients.jedis.Jedis;
 
 import java.util.List;
 
 public class DocManSys {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         cleanRedisCache();
         SessionFactory sessionFactory = HibernateUtil.getSessionFactory();
         DocumentationService documentationService = buildDocumentationService(sessionFactory);
@@ -27,6 +29,8 @@ public class DocManSys {
         demonstratePageMethods(documentationService, editor, commenter);
 
         HibernateUtil.shutdown();
+        RedisCacheUtil.shutdown();
+        ElasticsearchUtil.close();
     }
 
     private static void cleanRedisCache() {
@@ -75,6 +79,7 @@ public class DocManSys {
         System.out.printf("Пароль пользователя %s обновлен%n", commenter.getUsername());
 
         User temp = documentationService.createUser("tempUser", "Guest");
+        System.out.println("Пользователь tempUser успешно сохранён");
         documentationService.deleteUser(temp.getId());
         System.out.println("Временный пользователь создан и удален");
     }
