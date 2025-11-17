@@ -2,6 +2,8 @@ package db.service;
 
 import db.dao.*;
 import db.entities.*;
+import db.security.Secured;
+import db.security.SecurityContext;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -45,31 +47,18 @@ public class DocumentationServiceImpl implements DocumentationService {
     }
 
     @Override
+    @Secured(roles = {"Editor", "Admin"})
     public Page createPage(String title, String slug, String content, String username) {
         User author = userDAO.findByUsername(username);
         if (author == null) throw new RuntimeException("User not found");
 
-        Page existingPage = pageDAO.findBySlug(slug);
-        if (existingPage != null) {
-            return existingPage;
-        }
-
-        Page page = new Page();
-        page.setTitle(title);
-        page.setSlug(slug);
-        page.setCreatedAt(LocalDateTime.now());
-        page.setUpdatedAt(LocalDateTime.now());
-        pageDAO.save(page);
-        pageVersionDAO.createNewVersion(page, author, content);
-        page = pageDAO.findByIdWithTagsAndVersions(page.getId());
-        if (page == null) {
-            throw new RuntimeException("Page not found after save");
-        }
+        Page page = pageDAO.createWithVersion(title, slug, content, author);
         searchDAO.indexPage(page);
         return page;
     }
 
     @Override
+    @Secured(roles = {"Editor", "Admin"})
     public PageVersion updatePageContent(Long pageId, String newContent, String username) {
         Page page = pageDAO.findById(Page.class, pageId);
         if (page == null) throw new RuntimeException("Page not found");
@@ -106,6 +95,7 @@ public class DocumentationServiceImpl implements DocumentationService {
     }
 
     @Override
+    @Secured(roles = {"Editor", "Admin"})
     public void deletePage(Long id) {
         Page page = pageDAO.findByIdWithTagsAndVersions(id);
         if (page == null) throw new RuntimeException("Page not found");
@@ -131,6 +121,7 @@ public class DocumentationServiceImpl implements DocumentationService {
     }
 
     @Override
+    @Secured(roles = {"Editor", "Admin"})
     public User createUser(String username, String roleName) {
         Role role = roleDAO.findByName(roleName);
         if (role == null) {
@@ -151,12 +142,14 @@ public class DocumentationServiceImpl implements DocumentationService {
     }
 
     @Override
+    @Secured(roles = {"Editor", "Admin"})
     public User updateUser(User user) {
         user.setUpdatedAt(LocalDateTime.now());
         return userDAO.update(user);
     }
 
     @Override
+    @Secured(roles = {"Editor", "Admin"})
     public void deleteUser(Long id) {
         User user = userDAO.findById(User.class, id);
         if (user == null) throw new RuntimeException("User not found");
@@ -176,16 +169,19 @@ public class DocumentationServiceImpl implements DocumentationService {
     }
 
     @Override
+    @Secured(roles = {"Editor", "Admin"})
     public Role createRole(Role role) {
         return roleDAO.save(role);
     }
 
     @Override
+    @Secured(roles = {"Editor", "Admin"})
     public Role updateRole(Role role) {
         return roleDAO.update(role);
     }
 
     @Override
+    @Secured(roles = {"Editor", "Admin"})
     public void deleteRole(Long id) {
         Role role = roleDAO.findById(Role.class, id);
         if (role == null) throw new RuntimeException("Role not found");
@@ -193,6 +189,7 @@ public class DocumentationServiceImpl implements DocumentationService {
     }
 
     @Override
+    @Secured(roles = {"Editor", "Admin"})
     public Tag saveTag(Tag tag) {
         return tagDAO.save(tag);
     }
@@ -228,6 +225,7 @@ public class DocumentationServiceImpl implements DocumentationService {
     }
 
     @Override
+    @Secured(roles = {"Commenter", "Editor", "Admin"})
     public Comment addComment(Long pageVersionId, String username, String text) {
         PageVersion pageVersion = pageVersionDAO.findById(pageVersionId);
         if (pageVersion == null) throw new RuntimeException("Page version not found");
@@ -250,4 +248,20 @@ public class DocumentationServiceImpl implements DocumentationService {
     public void createElasticsearchIndex() {
         searchDAO.createIndexWithMapping();
     }
+
+    @Override
+    public User login(String username, String password) {
+        User user = userDAO.findByUsername(username);
+        if (user == null) {
+            throw new RuntimeException("Пользователь не найден");
+        }
+
+        if (!user.getPassword().equals(password)) {
+            throw new RuntimeException("Неверный пароль");
+        }
+
+        SecurityContext.login(user);
+        return user;
+    }
+
 }

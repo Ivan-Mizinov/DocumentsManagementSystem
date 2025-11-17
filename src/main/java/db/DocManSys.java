@@ -21,6 +21,8 @@ public class DocManSys {
         documentationService.createElasticsearchIndex();
         testRedisConnection();
 
+        documentationService.login("editorUser", "editorUser_pass");
+
         User guest = createUser(documentationService, "guestUser", "Guest");
         User reader = createUser(documentationService, "readerUser", "Reader");
         User commenter = createUser(documentationService, "commenterUser", "Commenter");

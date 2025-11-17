@@ -5,11 +5,16 @@ import db.dto.HeadingDTO;
 import db.dto.PageDTO;
 import db.entities.Heading;
 import db.entities.Page;
+import db.entities.PageVersion;
+import db.entities.User;
 import db.util.RedisCacheUtil;
 import jakarta.persistence.NoResultException;
+import org.hibernate.Hibernate;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -92,7 +97,7 @@ public class PageDAO extends BaseDAO<Page, PageDTO> {
         Page existingPage = findBySlug(slug);
         if (existingPage != null) {
             System.out.println("Страница с slug '" + slug + "' уже существует. Возвращаем существующую запись.");
-            cacheEntity(page);
+            cacheEntity(existingPage);
             return existingPage;
         }
 
@@ -198,4 +203,57 @@ public class PageDAO extends BaseDAO<Page, PageDTO> {
     private String headingsKey(Long pageId) {
         return String.format(HEADINGS_KEY_TEMPLATE, pageId);
     }
+
+    public Page createWithVersion(
+            String title,
+            String slug,
+            String content,
+            User author
+    ) {
+        try (Session session = getSession()) {
+            Transaction tx = session.beginTransaction();
+
+            try {
+                Page existing = findBySlug(slug);
+                if (existing != null) {
+                    return existing;
+                }
+
+                Page page = new Page();
+                page.setTitle(title);
+                page.setSlug(slug);
+                page.setCreatedAt(LocalDateTime.now());
+                page.setUpdatedAt(LocalDateTime.now());
+
+                session.persist(page);
+
+                PageVersion version = new PageVersion();
+                version.setPage(page);
+                version.setContent(content);
+                version.setChangedBy(author);
+                version.setChangedAt(LocalDateTime.now());
+                version.setVersionNumber(1);
+                version.setPublished(false);
+
+                session.persist(version);
+
+                tx.commit();
+
+                Page managedPage = session.find(Page.class, page.getId());
+                Hibernate.initialize(managedPage.getVersions());
+
+                RedisCacheUtil.evict(ALL_PAGES_KEY);
+                RedisCacheUtil.cacheValue(slugKey(slug), entityToDTO(managedPage));
+
+                return managedPage;
+
+            } catch (Exception e) {
+                if (tx != null && tx.isActive()) {
+                    tx.rollback();
+                }
+                return null;
+            }
+        }
+    }
+
 }
