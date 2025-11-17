@@ -61,6 +61,11 @@ public class DocumentationServiceImpl implements DocumentationService {
         page.setUpdatedAt(LocalDateTime.now());
         pageDAO.save(page);
         pageVersionDAO.createNewVersion(page, author, content);
+        page = pageDAO.findByIdWithTagsAndVersions(page.getId());
+        if (page == null) {
+            throw new RuntimeException("Page not found after save");
+        }
+        searchDAO.indexPage(page);
         return page;
     }
 
@@ -74,6 +79,9 @@ public class DocumentationServiceImpl implements DocumentationService {
 
         page.setUpdatedAt(LocalDateTime.now());
         pageDAO.update(page);
+
+        Page updatedPage = pageDAO.findByIdWithTagsAndVersions(page.getId());
+        searchDAO.indexPage(updatedPage);
 
         return pageVersionDAO.createNewVersion(page, editor, newContent);
     }
@@ -99,9 +107,15 @@ public class DocumentationServiceImpl implements DocumentationService {
 
     @Override
     public void deletePage(Long id) {
-        Page page = pageDAO.findById(Page.class, id);
+        Page page = pageDAO.findByIdWithTagsAndVersions(id);
         if (page == null) throw new RuntimeException("Page not found");
         pageDAO.delete(page);
+
+        try {
+            searchDAO.deletePageFromIndex(id);
+        } catch (Exception e) {
+            System.out.println("Ошибка при удалении страницы из Elasticsearch: " + e.getMessage());
+        }
     }
 
     @Override
@@ -230,5 +244,10 @@ public class DocumentationServiceImpl implements DocumentationService {
         comment.setResolved(false);
 
         return commentDAO.save(comment);
+    }
+
+    @Override
+    public void createElasticsearchIndex() {
+        searchDAO.createIndexWithMapping();
     }
 }

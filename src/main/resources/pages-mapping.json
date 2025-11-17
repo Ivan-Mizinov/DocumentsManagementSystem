@@ -1,0 +1,25 @@
+{
+  "mappings": {
+    "properties": {
+      "title": {
+        "type": "text",
+        "analyzer": "standard"
+      },
+      "slug": { "type": "keyword" },
+      "tags": {
+        "type": "nested",
+        "properties": {
+          "name": { "type": "text", "analyzer": "standard" },
+          "description": { "type": "text" }
+        }
+      },
+      "versions": {
+        "type": "nested",
+        "properties": {
+          "content": { "type": "text", "analyzer": "standard" },
+          "versionNumber": { "type": "integer" }
+        }
+      }
+    }
+  }
+}

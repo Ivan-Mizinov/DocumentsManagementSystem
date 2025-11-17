@@ -5,7 +5,6 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 
-import java.io.Serializable;
 import java.lang.reflect.Method;
 
 public abstract class BaseDAO<T, D> {

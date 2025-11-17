@@ -1,5 +1,6 @@
 package db.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.BatchSize;
@@ -27,18 +28,22 @@ public class Page {
 
     @OneToMany(mappedBy = "page", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @BatchSize(size = 10)
+    @JsonIgnore
     private List<PageVersion> versions;
 
     @OneToMany(mappedBy = "page", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @BatchSize(size = 10)
+    @JsonIgnore
     private List<Heading> headings;
 
     @OneToMany(mappedBy = "page", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @BatchSize(size = 10)
+    @JsonIgnore
     private List<Block> blocks;
 
     @OneToMany(mappedBy = "page", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @BatchSize(size = 10)
+    @JsonIgnore
     private List<Link> links;
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -48,6 +53,7 @@ public class Page {
             inverseJoinColumns = @JoinColumn(name = "tag_id")
     )
     @BatchSize(size = 10)
+    @JsonIgnore
     private Set<Tag> tags;
 }
 

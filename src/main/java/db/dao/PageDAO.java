@@ -6,6 +6,7 @@ import db.dto.PageDTO;
 import db.entities.Heading;
 import db.entities.Page;
 import db.util.RedisCacheUtil;
+import jakarta.persistence.NoResultException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
@@ -166,7 +167,7 @@ public class PageDAO extends BaseDAO<Page, PageDTO> {
         heading.setLevel(dto.getLevel());
         heading.setText(dto.getText());
         heading.setPosition(dto.getPosition());
-        // Загружаем Page по ID из базы
+
         if (dto.getPageId() != null) {
             try (Session session = getSession()) {
                 Page page = session.find(Page.class, dto.getPageId());
@@ -174,6 +175,20 @@ public class PageDAO extends BaseDAO<Page, PageDTO> {
             }
         }
         return heading;
+    }
+
+    public Page findByIdWithTagsAndVersions(Long id) {
+        try (Session session = getSession()) {
+            return session.createQuery(
+                            "SELECT p FROM Page p " +
+                                    "LEFT JOIN FETCH p.tags " +
+                                    "LEFT JOIN FETCH p.versions " +
+                                    "WHERE p.id = :id", Page.class)
+                    .setParameter("id", id)
+                    .uniqueResult();
+        } catch (NoResultException e) {
+            return null;
+        }
     }
 
     private String slugKey(String slug) {

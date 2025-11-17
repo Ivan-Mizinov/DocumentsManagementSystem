@@ -36,4 +36,5 @@ public interface DocumentationService {
     List<Link> getLinksByPageId(Long pageId);
     List<Comment> getCommentsByPageVersion(Long pageVersionId);
     Comment addComment(Long pageVersionId, String username, String text);
+    void createElasticsearchIndex();
 }

@@ -1,5 +1,6 @@
 package db;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import db.dao.*;
 import db.entities.*;
 import db.service.DocumentationService;
@@ -17,6 +18,7 @@ public class DocManSys {
         cleanRedisCache();
         SessionFactory sessionFactory = HibernateUtil.getSessionFactory();
         DocumentationService documentationService = buildDocumentationService(sessionFactory);
+        documentationService.createElasticsearchIndex();
         testRedisConnection();
 
         User guest = createUser(documentationService, "guestUser", "Guest");
@@ -43,12 +45,13 @@ public class DocManSys {
     }
 
     private static DocumentationService buildDocumentationService(SessionFactory sessionFactory) {
+        ElasticsearchClient esClient = ElasticsearchUtil.getClient();
         return new DocumentationServiceImpl(
                 new BlockDAO(sessionFactory),
                 new PageDAO(sessionFactory),
                 new PageVersionDAO(sessionFactory),
                 new RoleDAO(sessionFactory),
-                new SearchDAO(sessionFactory),
+                new SearchDAO(esClient),
                 new TagDAO(sessionFactory),
                 new UserDAO(sessionFactory),
                 new CommentDAO(sessionFactory),
