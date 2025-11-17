@@ -1,10 +1,13 @@
 package db.service;
 
+import db.util.MinioUtil;
+
 import db.dao.*;
 import db.entities.*;
 import db.security.Secured;
 import db.security.SecurityContext;
 
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -18,10 +21,11 @@ public class DocumentationServiceImpl implements DocumentationService {
     private final UserDAO userDAO;
     private final CommentDAO commentDAO;
     private final LinkDAO linkDAO;
+    private final MinioUtil minioUtil;
 
     public DocumentationServiceImpl(BlockDAO blockDAO, PageDAO pageDAO, PageVersionDAO pageVersionDAO,
                                     RoleDAO roleDAO, SearchDAO searchDAO, TagDAO tagDAO, UserDAO userDAO,
-                                    CommentDAO commentDAO, LinkDAO linkDAO) {
+                                    CommentDAO commentDAO, LinkDAO linkDAO, MinioUtil minioUtil) {
         this.blockDAO = blockDAO;
         this.pageDAO = pageDAO;
         this.pageVersionDAO = pageVersionDAO;
@@ -31,6 +35,7 @@ public class DocumentationServiceImpl implements DocumentationService {
         this.userDAO = userDAO;
         this.commentDAO = commentDAO;
         this.linkDAO = linkDAO;
+        this.minioUtil = minioUtil;
     }
 
     @Override
@@ -262,6 +267,23 @@ public class DocumentationServiceImpl implements DocumentationService {
 
         SecurityContext.login(user);
         return user;
+    }
+
+    @Override
+    public String uploadUserAvatar(Long userId, InputStream inputStream, String contentType) {
+        User user = userDAO.findById(User.class, userId);
+        if (user == null) throw new RuntimeException("User not found");
+
+        try {
+            String objectKey = "user_" + userId + "." + contentType;
+            minioUtil.uploadAvatar(userId, inputStream, contentType, objectKey);
+
+            user.setAvatarUrl(objectKey);
+            userDAO.update(user);
+            return objectKey;
+        } catch (Exception e) {
+            throw new RuntimeException("Ошибка загрузки аватара: " + e.getMessage(), e);
+        }
     }
 
 }

@@ -2,6 +2,7 @@ package db.service;
 
 import db.entities.*;
 
+import java.io.InputStream;
 import java.util.List;
 
 public interface DocumentationService {
@@ -38,4 +39,5 @@ public interface DocumentationService {
     Comment addComment(Long pageVersionId, String username, String text);
     void createElasticsearchIndex();
     User login(String username, String password);
+    String uploadUserAvatar(Long userId, InputStream inputStream, String contentType);
 }

@@ -7,10 +7,12 @@ import db.service.DocumentationService;
 import db.service.DocumentationServiceImpl;
 import db.util.ElasticsearchUtil;
 import db.util.HibernateUtil;
+import db.util.MinioUtil;
 import db.util.RedisCacheUtil;
 import org.hibernate.SessionFactory;
 import redis.clients.jedis.Jedis;
 
+import java.io.InputStream;
 import java.util.List;
 
 public class DocManSys {
@@ -28,13 +30,49 @@ public class DocManSys {
         User commenter = createUser(documentationService, "commenterUser", "Commenter");
         User editor = createUser(documentationService, "editorUser", "Editor");
 
-        demonstrateUserMethods(documentationService, reader, commenter, editor);
+        loadAvatarsForUsers(documentationService, guest, reader, commenter, editor);
+
+        demonstrateUserMethods(documentationService, commenter, editor);
         demonstrateRoleMethods(documentationService, guest);
         demonstratePageMethods(documentationService, editor, commenter);
 
         HibernateUtil.shutdown();
         RedisCacheUtil.shutdown();
         ElasticsearchUtil.close();
+    }
+
+    private static void loadAvatarsForUsers(DocumentationService documentationService, User guest, User reader, User commenter, User editor) {
+        try {
+            String[] avatarPaths = {
+                    "1.jpg",
+                    "2.jpg",
+                    "3.jpg",
+                    "4.jpg",
+            };
+            User[] users = {guest, reader, commenter, editor};
+            MinioUtil minioUtil = MinioUtil.getInstance();
+
+            for (int i = 0; i < users.length; i++) {
+                String path = avatarPaths[i];
+                try (InputStream is = DocManSys.class.getClassLoader().getResourceAsStream(path)) {
+                    if (is != null) {
+                        String avatarUrl = documentationService.uploadUserAvatar(
+                                users[i].getId(),
+                                is,
+                                "image/jpeg"
+                        );
+                        System.out.printf("Аватар загружен для пользователя %s: %s%n", users[i].getUsername(), avatarUrl);
+
+                        String presignedUrl = minioUtil.getPresignedUrl(avatarUrl, 3600);
+                        System.out.printf("Presigned URL для аватара %s: %s%n", users[i].getUsername(), presignedUrl);
+                    } else {
+                        System.out.println("Не найдет файл аватара");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Ошибка при загрузке аватарок: " + e.getMessage());
+        }
     }
 
     private static void cleanRedisCache() {
@@ -48,6 +86,7 @@ public class DocManSys {
 
     private static DocumentationService buildDocumentationService(SessionFactory sessionFactory) {
         ElasticsearchClient esClient = ElasticsearchUtil.getClient();
+        MinioUtil minioUtil = MinioUtil.getInstance();
         return new DocumentationServiceImpl(
                 new BlockDAO(sessionFactory),
                 new PageDAO(sessionFactory),
@@ -57,7 +96,8 @@ public class DocManSys {
                 new TagDAO(sessionFactory),
                 new UserDAO(sessionFactory),
                 new CommentDAO(sessionFactory),
-                new LinkDAO(sessionFactory)
+                new LinkDAO(sessionFactory),
+                minioUtil
         );
     }
 
@@ -68,7 +108,6 @@ public class DocManSys {
     }
 
     private static void demonstrateUserMethods(DocumentationService documentationService,
-                                               User reader,
                                                User commenter,
                                                User editor) {
         System.out.println("--- Пример использования методов работы с пользователями ---");
